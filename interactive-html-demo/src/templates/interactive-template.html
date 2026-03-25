@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{conceptName}} - 交互式学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-lg p-8 max-w-4xl w-full">
+    <h1 class="text-3xl font-bold text-center mb-6 text-blue-600">{{conceptName}}</h1>
+    
+    <div class="mb-6">
+      <label class="block text-lg font-semibold mb-2">{{param1Label}}: <span id="param1-value">{{param1Default}}</span></label>
+      <input type="range" id="param1" min="{{param1Min}}" max="{{param1Max}}" value="{{param1Default}}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+    </div>
+    
+    <div class="mb-6">
+      <label class="block text-lg font-semibold mb-2">{{param2Label}}: <span id="param2-value">{{param2Default}}</span></label>
+      <input type="range" id="param2" min="{{param2Min}}" max="{{param2Max}}" value="{{param2Default}}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+    </div>
+    
+    <div class="bg-blue-50 rounded-lg p-6 text-center mb-6">
+      <p class="text-xl mb-2">{{resultLabel}}</p>
+      <p class="text-4xl font-bold text-blue-600" id="result">{{resultDefault}}</p>
+      <p class="text-lg text-gray-600">{{resultUnit}}</p>
+    </div>
+    
+    <div class="text-center">
+      <p class="text-gray-600">公式: \( {{formula}} \)</p>
+    </div>
+  </div>
+  
+  <script>
+    const param1Slider = document.getElementById('param1');
+    const param2Slider = document.getElementById('param2');
+    const param1Value = document.getElementById('param1-value');
+    const param2Value = document.getElementById('param2-value');
+    const resultDisplay = document.getElementById('result');
+    
+    function update() {
+      const p1 = parseFloat(param1Slider.value);
+      const p2 = parseFloat(param2Slider.value);
+      const result = {{calculation}};
+      
+      param1Value.textContent = p1;
+      param2Value.textContent = p2;
+      resultDisplay.textContent = result.toFixed(2);
+    }
+    
+    param1Slider.addEventListener('input', update);
+    param2Slider.addEventListener('input', update);
+    
+    update();
+  </script>
+</body>
+</html>
