@@ -1,0 +1,381 @@
+@startuml 交互式HTML生成流程图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam activityBorderColor #333333
+skinparam activityBackgroundColor #E8F5E9
+skinparam arrowColor #333333
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #FF5722
+
+title OpenMAIC 交互式HTML生成 - 业务流程与模型调用
+
+|用户层|
+start
+:用户输入概念信息
+note right
+  输入数据示例:
+  - 概念名称: 牛顿第二定律
+  - 学科: 物理学
+  - 概述: 描述物体加速度与作用力、质量之间的关系
+  - 关键点: 力与加速度成正比、质量与加速度成反比、F=ma公式
+  - 设计思路: 通过滑块调节力和质量，实时显示加速度变化
+end note
+
+|生成层|
+partition "阶段1: 大纲生成" {
+  :接收用户输入
+  :分析用户需求
+  :生成SceneOutline
+  note right
+    {
+      type: 'interactive',
+      title: '概念名称',
+      description: '描述',
+      keyPoints: ['关键点1', '关键点2'],
+      interactiveConfig: {
+        conceptName: '概念名称',
+        conceptOverview: '概述',
+        designIdea: '设计思路',
+        subject: '学科'
+      }
+    }
+  end note
+}
+
+partition "阶段2: 科学建模" {
+  :构建科学建模Prompt
+  note right
+    Prompt: interactive-scientific-model
+    System: 科学建模专家
+    Task: 提取核心公式、机制、约束
+  end note
+
+  :调用AI模型
+  note right
+    OpenAI GPT-4o-mini
+    Temperature: 0.7
+  end note
+
+  :解析AI响应
+  note right
+    parseJsonResponse
+  end note
+
+  if (解析成功?) then (是)
+    :提取ScientificModel
+    note right
+      {
+        core_formulas: ['F = ma', 'a = F/m'],
+        mechanism: ['机制1', '机制2'],
+        constraints: ['约束1', '约束2'],
+        forbidden_errors: ['错误1', '错误2']
+      }
+    end note
+  else (否)
+    :记录警告
+    note right
+      log.warn
+    end note
+    :继续执行
+    note right
+      使用默认约束
+    end note
+  endif
+
+  :格式化科学约束
+  note right
+    用于HTML生成
+  end note
+}
+
+partition "阶段3: HTML生成" {
+  :构建HTML生成Prompt
+  note right
+    Prompt: interactive-html
+    System: 交互式网页生成器
+    Task: 生成自包含HTML5文档
+    Requirements:
+    - Tailwind CSS
+    - 纯JavaScript
+    - LaTeX公式支持
+    - 响应式设计
+  end note
+
+  :调用AI模型
+  note right
+    OpenAI GPT-4o-mini
+    Temperature: 0.7
+  end note
+
+  :接收AI响应
+  note right
+    包含HTML文档
+  end note
+}
+
+partition "阶段4: HTML提取" {
+  :尝试策略1
+  note right
+    查找<!DOCTYPE html>
+  end note
+
+  if (找到完整HTML?) then (是)
+    :提取HTML文档
+    note right
+      substring
+    end note
+  else (否)
+    :尝试策略2
+    note right
+      查找代码块```html```
+    end note
+    if (找到代码块?) then (是)
+      :提取代码块内容
+    else (否)
+      :尝试策略3
+      note right
+        检查响应本身
+      end note
+      if (是HTML?) then (是)
+        :使用完整响应
+      else (否)
+        :记录错误
+        note right
+          log.error
+        end note
+        :返回null
+      endif
+    endif
+  endif
+
+  if (提取成功?) then (是)
+    :返回RawHTML
+  else (否)
+    :终止流程
+  endif
+}
+
+partition "阶段5: 后处理" {
+  :保护Script标签
+  note right
+    替换为占位符
+    防止LaTeX转换时
+    误修改script内容
+  end note
+
+  :转换LaTeX分隔符
+  note right
+    $$...$$ → \\[...\\]
+    $...$ → \\(...\\)
+  end note
+
+  :恢复Script标签
+  note right
+    从占位符恢复
+  end note
+
+  :注入KaTeX资源
+  note right
+    - KaTeX CSS
+    - KaTeX JS
+    - auto-render扩展
+    - MutationObserver监听器
+    - 定时检查机制(2秒)
+  end note
+
+  :插入位置判断
+  if (存在</head>?) then (是)
+    :在</head>前注入
+  else (否)
+    if (存在</body>?) then (是)
+      :在</body>前注入
+    else (否)
+      :追加到文档末尾
+    endif
+  endif
+
+  :返回ProcessedHTML
+  note right
+    可渲染的完整HTML
+  end note
+}
+
+partition "阶段6: 动作生成" {
+  :构建动作生成Prompt
+  note right
+    Prompt: interactive-actions
+    System: 交互式场景动作生成器
+    Task: 生成语音指导动作
+    Output: JSON数组
+  end note
+
+  :调用AI模型
+  note right
+    OpenAI GPT-4o-mini
+    Temperature: 0.7
+  end note
+
+  :解析AI响应
+  note right
+    parseJsonResponse
+  end note
+
+  if (解析成功?) then (是)
+    :转换为Action数组
+    note right
+      {
+        id: nanoid(),
+        type: 'speech',
+        content: '语音文本',
+        timestamp: 0
+      }
+    end note
+  else (否)
+    :记录错误
+    note right
+      log.error
+    end note
+    :返回空数组
+  endif
+}
+
+partition "阶段7: 场景创建" {
+  :创建Scene对象
+  note right
+    {
+      id: 'scene_1',
+      type: 'interactive',
+      title: '概念名称',
+      content: {
+        type: 'interactive',
+        html: 'ProcessedHTML'
+      },
+      actions: [Action数组]
+    }
+  end note
+
+  :保存到状态管理
+  note right
+    Zustand Store
+  end note
+}
+
+|渲染层|
+partition "阶段8: 渲染展示" {
+  :InteractiveRenderer组件
+  note right
+    React组件
+  end note
+
+  :应用Iframe CSS补丁
+  note right
+    修复iframe布局问题:
+    - html, body { width: 100%, height: 100% }
+    - body { min-height: 100vh }
+    - overflow处理
+  end note
+
+  :设置Iframe属性
+  note right
+    - srcDoc: 注入HTML
+    - sandbox: 安全沙箱
+      allow-scripts
+      allow-same-origin
+      allow-forms
+      allow-popups
+  end note
+
+  :渲染Iframe
+  note right
+    沙箱隔离环境
+  end note
+
+  :KaTeX自动渲染
+  note right
+    - DOMContentLoaded事件
+    - renderMathInElement
+    - MutationObserver监听
+    - 防抖渲染(100ms)
+    - 定时检查(2000ms)
+  end note
+
+  :用户交互
+  note right
+    滑块、点击、拖拽
+  end note
+
+  :JavaScript逻辑执行
+  note right
+    纯JS交互
+  end note
+
+  :实时更新显示
+  note right
+    Canvas/SVG重绘
+  end note
+}
+
+|用户层|
+:用户查看交互式页面
+:用户进行交互操作
+note right
+  调节参数、观察结果
+end note
+
+:学习科学概念
+
+stop
+
+legend right
+  |用户层| 用户交互
+  |生成层| AI生成逻辑
+  |渲染层| 前端渲染
+endlegend
+
+note right of (阶段2: 科学建模)
+  **科学建模容错机制**
+  
+  如果科学建模失败，系统会：
+  1. 记录警告日志
+  2. 继续执行HTML生成
+  3. 使用默认约束条件
+  
+  这样确保即使科学建模失败，
+  仍然可以生成交互式HTML
+end note
+
+note right of (阶段5: 后处理)
+  **后处理关键功能**
+  
+  1. **Script标签保护**
+     - 替换为占位符
+     - LaTeX转换后恢复
+  
+  2. **LaTeX分隔符转换**
+     - $$...$$ → \\[...\\] (显示)
+     - $...$ → \\(...\\) (行内)
+  
+  3. **KaTeX自动渲染**
+     - MutationObserver监听DOM变化
+     - 防抖渲染(100ms)
+     - 定时检查(2000ms)
+  
+  4. **Iframe布局修复**
+     - 强制100%宽高
+     - 修复overflow问题
+end note
+
+note bottom of (阶段3: HTML生成)
+  **AI模型配置**
+  
+  模型: OpenAI GPT-4o-mini
+  Temperature: 0.7
+  输出格式: 完整HTML文档
+  技术要求:
+  - Tailwind CSS (CDN)
+  - 纯JavaScript (无框架)
+  - LaTeX公式 (双反杠转义)
+  - 响应式设计
+end note
+
+@enduml

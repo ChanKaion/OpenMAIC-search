@@ -1,0 +1,274 @@
+@startuml 交互式HTML生成 - 数据流图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+skinparam participantBackgroundColor #E8F5E9
+skinparam participantBorderColor #333333
+skinparam arrowColor #333333
+
+title OpenMAIC 交互式HTML生成 - 数据流详解
+
+actor "用户" as User
+participant "Vue组件" as Vue
+participant "Prompt构建器" as PromptBuilder
+participant "AI模型" as AI
+participant "HTML处理器" as HTMLProcessor
+participant "渲染器" as Renderer
+
+== 阶段1: 用户输入 ==
+User -> Vue: 输入概念信息
+note right
+  (概念名称、学科、概述、
+  关键点、设计思路)
+end note
+Vue -> Vue: 创建SceneOutline对象
+Vue -> Vue: 初始化响应式状态
+
+== 阶段2: 科学建模 ==
+Vue -> PromptBuilder: 调用buildPrompt()
+note right
+  ID: INTERACTIVE_SCIENTIFIC_MODEL
+end note
+PromptBuilder -> PromptBuilder: 加载system.md
+note right
+  (科学建模专家)
+end note
+PromptBuilder -> PromptBuilder: 加载user.md
+note right
+  (概念信息)
+end note
+PromptBuilder -> PromptBuilder: 插入变量
+note right
+  {{conceptName}}, {{subject}}, etc.
+end note
+PromptBuilder -> AI: 返回system和user prompt
+
+AI -> AI: 调用GPT-4o-mini
+note right
+  Temperature: 0.7
+end note
+AI -> Vue: 返回JSON响应
+note right
+  ScientificModel
+end note
+
+Vue -> Vue: 解析JSON响应
+note right
+  parseJsonResponse
+end note
+
+alt 解析成功
+  Vue -> Vue: 提取科学模型
+  Vue -> Vue: 格式化约束条件
+else 解析失败
+  Vue -> Vue: 记录警告
+  note right
+    使用默认约束
+  end note
+end alt
+
+== 阶段3: HTML生成 ==
+Vue -> PromptBuilder: 调用buildPrompt()
+note right
+  ID: INTERACTIVE_HTML
+end note
+PromptBuilder -> PromptBuilder: 加载system.md
+note right
+  (交互式网页生成器)
+end note
+PromptBuilder -> PromptBuilder: 加载user.md
+note right
+  (HTML生成要求)
+end note
+PromptBuilder -> PromptBuilder: 插入变量
+note right
+  包含科学约束
+end note
+PromptBuilder -> AI: 返回system和user prompt
+
+AI -> AI: 调用GPT-4o-mini
+note right
+  Temperature: 0.7
+end note
+AI -> Vue: 返回HTML响应
+note right
+  完整HTML文档
+end note
+
+== 阶段4: HTML提取 ==
+Vue -> Vue: 调用extractHtml()
+note right
+  查找<!DOCTYPE html>
+end note
+
+alt 策略1: 查找完整HTML文档
+  Vue -> Vue: 提取HTML
+  note right
+    substring
+  end note
+else 未找到
+  Vue -> Vue: 尝试策略2
+  note right
+    查找代码块
+  end note
+
+  alt 策略2: 从```html```提取
+    Vue -> Vue: 提取代码块内容
+  else 未找到
+    Vue -> Vue: 尝试策略3
+    note right
+      检查响应本身
+    end note
+
+    alt 策略3: 使用完整响应
+      Vue -> Vue: 使用完整响应
+    else 不是HTML
+      Vue -> Vue: 记录错误
+      note right
+        返回null
+      end note
+    end alt
+  end alt
+end alt
+
+== 阶段5: 后处理 ==
+Vue -> HTMLProcessor: 调用postProcessHtml()
+note right
+  RawHTML
+end note
+
+HTMLProcessor -> HTMLProcessor: 保护Script标签
+note right
+  替换为占位符
+end note
+
+HTMLProcessor -> HTMLProcessor: 转换LaTeX分隔符
+note right
+  $$...$$ → \\[...\\] (显示公式)
+  $...$ → \\(...\\) (行内公式)
+end note
+
+HTMLProcessor -> HTMLProcessor: 恢复Script标签
+note right
+  从占位符恢复
+end note
+
+HTMLProcessor -> HTMLProcessor: 注入KaTeX资源
+note right
+  - KaTeX CSS
+  - KaTeX JS
+  - auto-render扩展
+  - MutationObserver监听
+  - 定时检查(2000ms)
+  - 防抖渲染(100ms)
+end note
+
+HTMLProcessor -> Vue: 返回ProcessedHTML
+
+== 阶段6: 动作生成 ==
+Vue -> PromptBuilder: 调用buildPrompt()
+note right
+  ID: INTERACTIVE_ACTIONS
+end note
+PromptBuilder -> PromptBuilder: 加载system.md
+note right
+  (动作生成器)
+end note
+PromptBuilder -> PromptBuilder: 加载user.md
+note right
+  (动作生成要求)
+end note
+PromptBuilder -> PromptBuilder: 插入变量
+note right
+  课程上下文、智能体等
+end note
+PromptBuilder -> AI: 返回system和user prompt
+
+AI -> AI: 调用GPT-4o-mini
+note right
+  Temperature: 0.7
+end note
+AI -> Vue: 返回JSON响应
+note right
+  Action数组
+end note
+
+Vue -> Vue: 解析JSON响应
+note right
+  parseJsonResponse
+end note
+
+Vue -> Vue: 转换为Action数组
+note right
+  添加id、type、timestamp
+end note
+
+== 阶段7: 场景创建 ==
+Vue -> Vue: 创建Scene对象
+Vue -> Vue: 合并content和actions
+Vue -> Vue: 保存到Zustand Store
+
+== 阶段8: 渲染展示 ==
+Vue -> Renderer: 传递InteractiveContent
+note right
+  html, actions
+end note
+
+Renderer -> Renderer: 应用Iframe CSS补丁
+note right
+  <style data-iframe-patch>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    body { min-height: 100vh; }
+  </style>
+end note
+
+Renderer -> Renderer: 设置Iframe属性
+note right
+  - srcDoc: ProcessedHTML
+  - sandbox: allow-scripts
+             allow-same-origin
+             allow-forms
+             allow-popups
+  - class: w-full h-full border-0
+end note
+
+Renderer -> Renderer: 渲染Iframe
+note right
+  沙箱隔离
+end note
+
+== 阶段9: 用户交互 ==
+User -> Renderer: 用户交互
+note right
+  滑块、点击、拖拽
+end note
+
+Renderer -> Renderer: JavaScript逻辑执行
+note right
+  纯JS交互
+end note
+
+Renderer -> Renderer: 实时更新显示
+note right
+  Canvas/SVG重绘
+end note
+
+Renderer -> Renderer: KaTeX自动渲染
+note right
+  1. DOMContentLoaded事件
+  2. MutationObserver检测变化
+  3. 定时检查(2000ms)
+  4. 防抖处理(100ms)
+end note
+
+Renderer -> User: 显示交互结果
+User -> User: 学习科学概念
+
+@enduml

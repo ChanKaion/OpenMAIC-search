@@ -1,0 +1,158 @@
+@startuml 交互式HTML生成 - 组件架构图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle uml2
+skinparam componentBackgroundColor #E8F5E9
+skinparam componentBorderColor #333333
+skinparam arrowColor #333333
+
+title OpenMAIC 交互式HTML生成 - 组件架构与依赖关系
+
+package "前端层" {
+  [InteractiveRenderer] as Renderer
+  [App.vue] as App
+  [Scene] as Scene
+}
+
+package "业务逻辑层" {
+  [generateInteractiveContent] as Generator
+  [generateSceneActions] as ActionGenerator
+  [createSceneWithActions] as SceneCreator
+}
+
+package "工具层" {
+  [buildPrompt] as PromptBuilder
+  [extractHtml] as HtmlExtractor
+  [postProcessInteractiveHtml] as HtmlProcessor
+  [parseJsonResponse] as JsonParser
+}
+
+package "Prompt系统" {
+  [PROMPT_IDS] as PromptIds
+  [interactive-scientific-model] as ScientificPrompt
+  [interactive-html] as HtmlPrompt
+  [interactive-actions] as ActionPrompt
+}
+
+package "类型定义" {
+  [SceneOutline] as OutlineType
+  [InteractiveContent] as ContentType
+  [GeneratedInteractiveContent] as GeneratedType
+  [ScientificModel] as ModelType
+  [Action] as ActionType
+}
+
+package "外部服务" {
+  [OpenAI GPT-4o-mini] as AIModel
+  [Vercel AI SDK] as AISDK
+  [KaTeX] as KatexLib
+  [Tailwind CSS] as Tailwind
+}
+
+'用户' --> App: 输入概念信息
+
+App --> Generator: 调用生成函数
+App --> ActionGenerator: 调用动作生成
+
+Generator --> PromptBuilder: 构建科学建模Prompt
+Generator --> PromptBuilder: 构建HTML生成Prompt
+ActionGenerator --> PromptBuilder: 构建动作生成Prompt
+
+PromptBuilder --> PromptIds: 获取Prompt ID
+PromptIds --> ScientificPrompt: 加载system.md
+PromptIds --> ScientificPrompt: 加载user.md
+PromptIds --> HtmlPrompt: 加载system.md
+PromptIds --> HtmlPrompt: 加载user.md
+PromptIds --> ActionPrompt: 加载system.md
+PromptIds --> ActionPrompt: 加载user.md
+
+PromptBuilder --> AISDK: 调用generateText()
+AISDK --> AIModel: 发送请求
+AIModel --> AISDK: 返回响应
+AISDK --> Generator: 返回AI响应
+AISDK --> ActionGenerator: 返回AI响应
+
+Generator --> JsonParser: 解析ScientificModel
+JsonParser --> Generator: 返回解析结果
+ActionGenerator --> JsonParser: 解析Action数组
+JsonParser --> ActionGenerator: 返回解析结果
+
+Generator --> HtmlExtractor: 提取HTML
+HtmlExtractor --> Generator: 返回RawHTML
+
+Generator --> HtmlProcessor: 后处理HTML
+HtmlProcessor --> Generator: 返回ProcessedHTML
+
+Generator --> SceneCreator: 创建Scene
+ActionGenerator --> SceneCreator: 传递Actions
+SceneCreator --> Scene: 生成Scene对象
+
+Scene --> App: 传递Scene
+App --> Renderer: 传递InteractiveContent
+
+Renderer --> Tailwind: 使用样式
+Renderer --> KatexLib: 渲染公式
+
+note right of Generator
+  **generateInteractiveContent**
+  
+  输入: SceneOutline, AICallFn, language
+  输出: GeneratedInteractiveContent
+  
+  流程:
+  1. 科学建模 (可选)
+  2. HTML生成
+  3. HTML提取
+  4. 后处理
+end note
+
+note right of HtmlProcessor
+  **postProcessInteractiveHtml**
+  
+  功能:
+  1. LaTeX分隔符转换
+  2. KaTeX库注入
+  3. MutationObserver监听
+  
+  输入: RawHTML
+  输出: ProcessedHTML
+end note
+
+note right of PromptBuilder
+  **buildPrompt**
+  
+  功能:
+  1. 加载Prompt模板
+  2. 插入变量
+  3. 返回system和user prompt
+  
+  变量插值:
+  - {{conceptName}}
+  - {{subject}}
+  - {{keyPoints}}
+  - {{scientificConstraints}}
+  - {{designIdea}}
+  - {{language}}
+end note
+
+note bottom of App
+  **App.vue职责**
+  
+  1. 用户输入管理
+  2. 调用生成函数
+  3. 错误处理
+  4. 状态管理
+  5. 渲染结果
+end note
+
+note bottom of Renderer
+  **InteractiveRenderer职责**
+  
+  1. Iframe CSS补丁
+  2. 沙箱安全隔离
+  3. HTML内容注入
+  4. KaTeX自动渲染
+  5. 用户交互支持
+end note
+
+@enduml
